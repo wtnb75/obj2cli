@@ -9,6 +9,7 @@ import pickle
 import click
 import difflib
 from .parser import Parser
+from .version import VERSION
 
 log = getLogger(__name__)
 
@@ -23,6 +24,7 @@ in_formats = {
 }
 
 
+@click.version_option(version=VERSION, prog_name="obj2cli")
 @click.group(invoke_without_command=True)
 @click.pass_context
 def cli(ctx):

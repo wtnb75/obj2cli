@@ -103,3 +103,9 @@ optional arguments:
 # obj2cli --module logging --function warning --positional -- "hello %s" "world"
 2020-01-04 23:16:05,264 WARNING hello world
 ```
+
+# Links
+
+- [pypi](https://pypi.org/project/obj2cli/)
+- [coverage](https://wtnb75.github.io/obj2cli/)
+- ~~[local pypi repo](https://wtnb75.github.io/obj2cli/dist/)~~

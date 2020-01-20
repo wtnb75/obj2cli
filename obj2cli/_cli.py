@@ -10,6 +10,7 @@ import pickle
 import marshal
 import pprint
 from .main import main_single, main_func
+from .version import VERSION
 
 log = getLogger(__name__)
 
@@ -47,7 +48,8 @@ typemap = {
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog="obj2cli")
+    parser.add_argument("--version", action="version", version='%(prog)s ' + VERSION)
     parser.add_argument("--default-type", type=str,
                         default='str', dest='deftype', choices=typemap.keys())
     parser.add_argument("--module", type=str, required=True)
