@@ -8,3 +8,6 @@ share
 .ipynb_checkpoints
 cover
 .coverage
+dist
+build
+*.egg-info
