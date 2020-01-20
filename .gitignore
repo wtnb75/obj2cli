@@ -1,0 +1,10 @@
+bin
+lib
+include
+pyvenv.cfg
+etc
+man
+share
+.ipynb_checkpoints
+cover
+.coverage

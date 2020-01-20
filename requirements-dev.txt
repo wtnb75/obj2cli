@@ -1,0 +1,5 @@
+numpydoc
+jupyter
+nose
+coverage
+dirimport

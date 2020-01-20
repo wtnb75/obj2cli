@@ -1,0 +1,71 @@
+import functools
+from logging import getLogger, basicConfig, INFO, DEBUG
+import click
+from {{klass.__module__}} import {{klass.__name__}}
+
+log = getLogger(__name__)
+
+
+def set_verbose(flag):
+    fmt = '%(asctime)s %(levelname)s %(message)s'
+    if flag:
+        basicConfig(level=DEBUG, format=fmt)
+    else:
+        basicConfig(level=INFO, format=fmt)
+
+
+@click.group(invoke_without_command=True)
+@click.pass_context
+def cli(ctx):
+    if ctx.invoked_subcommand is None:
+        print(ctx.get_help())
+
+
+_common_option = [
+    click.option("--verbose/--no-verbose"),
+]
+
+_{{classmeta.name}}_option = [
+{%- for i in constructor %}
+    click.option("--{{i.name}}", type={{i.type.__name__}}),
+{%- endfor %}
+]
+
+
+def multi_options(decs):
+    def deco(f):
+        for dec in reversed(decs):
+            f = dec(f)
+        return f
+    return deco
+
+
+def cli_option(func):
+    @functools.wraps(func)
+    def wrap(verbose, *args, **kwargs):
+        set_verbose(verbose)
+        return func(*args, **kwargs)
+    return multi_options(_common_option)(wrap)
+
+
+def {{classmeta.name}}_option(func):
+    @functools.wraps(func)
+    def wrap(verbose, {{constructor|join(", ", attribute="name")}}, *args, **kwargs):
+        set_verbose(verbose)
+        obj = {{klass.__name__}}({{constructor|join(", ", attribute="name")}})
+        return func(obj, *args, **kwargs)
+    return multi_options(_common_option + _{{classmeta.name}}_option)(wrap)
+{% for name, val in funcs|dictsort %}
+
+@cli.command()
+@{{classmeta.name}}_option
+{%- for arg in val %}
+@click.option("--{{arg.name}}", type={{arg.type.__name__}})
+{%- endfor %}
+def {{name}}(obj, {{val|join(", ", attribute="name")}}):
+    res = obj.{{name}}({{val|map(attribute="name")|join(", ")}})
+    log.debug("result: %s", res)
+{% endfor %}
+
+if __name__ == "__main__":
+    cli()
