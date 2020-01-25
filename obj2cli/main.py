@@ -23,7 +23,9 @@ def main_cls(clsmap, args, deftype=str, positional=False):
     log.debug("carg: %s", carg)
     log.debug("farg: %s", farg)
     obj = parsed.__CLASS__(*carg[0], **carg[1])
-    return getattr(obj, parsed.__FUNCNAME__)(*farg[0], **farg[1])
+    if parsed.__FUNCNAME__ not in ("new"):
+        return getattr(obj, parsed.__FUNCNAME__)(*farg[0], **farg[1])
+    parser.print_usage()
 
 
 def main_single(ifcls, cls, args, deftype=str, positional=False):
@@ -36,7 +38,9 @@ def main_single(ifcls, cls, args, deftype=str, positional=False):
     log.debug("parsed: %s dict=%s", parsed, parsed.__dict__)
     carg, farg = ap.split_arg(data, parsed)
     obj = cls(*carg[0], **carg[1])
-    return getattr(obj, parsed.__FUNCNAME__)(*farg[0], **farg[1])
+    if parsed.__FUNCNAME__ not in ("new"):
+        return getattr(obj, parsed.__FUNCNAME__)(*farg[0], **farg[1])
+    parser.print_usage()
 
 
 def main_func(fn, args, noskip=False, deftype=str, positional=False):

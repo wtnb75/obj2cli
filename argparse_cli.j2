@@ -1,0 +1,7 @@
+import sys
+import obj2cli
+from {{klass.__module__}} import {{klass.__name__}}
+
+
+if __name__ == "__main__":
+    obj2cli.main_single({{klass.__name__}}, {{klass.__name__}}, sys.argv[1:])

@@ -60,7 +60,7 @@ def {{classmeta.name}}_option(func):
 @cli.command()
 @{{classmeta.name}}_option
 {%- for arg in val %}
-@click.option("--{{arg.name}}", type={{arg.type.__name__}})
+@click.option("--{{arg.name}}", type={{arg.type.__name__|default('str')}})
 {%- endfor %}
 def {{name}}(obj, {{val|join(", ", attribute="name")}}):
     res = obj.{{name}}({{val|map(attribute="name")|join(", ")}})

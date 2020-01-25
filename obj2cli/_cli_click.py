@@ -1,4 +1,5 @@
 import sys
+import subprocess
 import functools
 import importlib
 from logging import getLogger, basicConfig, INFO, DEBUG
@@ -117,12 +118,17 @@ def template_args(data, cls=None):
 @click.option("--input", type=click.File('rb'), default=sys.stdin.buffer)
 @click.option("--format", type=click.Choice(in_formats.keys()), default="yaml")
 @click.option("--template", type=click.File('r'), required=True)
-def gen(cls, input, format, template):
+@click.option("--autopep8/--no-autopep8", default=False)
+def gen(cls, input, format, template, autopep8):
     data = in_formats.get(format)(input)
     env = Environment()
     tmpl = env.from_string(template.read())
     res = tmpl.render(**template_args(data, cls))
-    print(res)
+    if autopep8:
+        p = subprocess.Popen(["autopep8", "-"], stdin=subprocess.PIPE)
+        p.communicate(res.encode("utf8"))
+    else:
+        print(res)
 
 
 @cli.command()
@@ -150,6 +156,15 @@ def diff(cls, input, format, template, other):
 def show(input, format):
     data = in_formats.get(format)(input)
     pprint.pprint(data)
+
+
+@cli.command('print-tmpl-args')
+@cls_option
+@click.option("--input", type=click.File('rb'), default=sys.stdin.buffer)
+@click.option("--format", type=click.Choice(in_formats.keys()), default="yaml")
+def show_tmplarg(cls, input, format):
+    data = in_formats.get(format)(input)
+    pprint.pprint(template_args(data, cls))
 
 
 if __name__ == "__main__":
