@@ -1,3 +1,4 @@
+import os
 import sys
 import subprocess
 import functools
@@ -9,6 +10,9 @@ from jinja2 import Environment
 import pickle
 import click
 import difflib
+import pkg_resources
+import io
+import pkgutil
 from .parser import Parser
 from .version import VERSION
 
@@ -17,6 +21,7 @@ log = getLogger(__name__)
 out_formats = {
     'pickle': lambda d, f: pickle.dump(d, f),
     'yaml': lambda d, f: yaml.dump(d, stream=f),
+    'pprint': lambda d, f: f.write(pprint.pformat(d).encode("utf-8")),
 }
 
 in_formats = {
@@ -51,6 +56,20 @@ _cls_option = _cli_option + [
     click.option("--class", "klass", type=str),
 ]
 
+out_option = [
+    click.option("--output", type=click.File('wb'),
+                 default=sys.stdout.buffer, show_default="STDOUT"),
+    click.option("--format", type=click.Choice(out_formats.keys()),
+                 default="yaml", show_default=True),
+]
+
+in_option = [
+    click.option("--input", type=click.File('rb'),
+                 default=sys.stdin.buffer, show_default="STDIN"),
+    click.option("--format", type=click.Choice(in_formats.keys()),
+                 default="yaml", show_default=True),
+]
+
 
 def multi_options(decs):
     def deco(f):
@@ -83,10 +102,42 @@ def cls_option(func):
     return multi_options(_cls_option)(wrap)
 
 
+def resource_option(dest, dirname=None, ext=""):
+    if dirname is None:
+        dirname = dest
+
+    def _resource_option(func):
+        @functools.wraps(func)
+        def wrap(*args, **kwargs):
+            val = kwargs.pop(dest)
+            exval = kwargs.pop("{}_example".format(dest))
+            if val is not None:
+                kwargs[dest] = open(val, 'rb')
+            else:
+                kwargs[dest] = io.BytesIO(pkgutil.get_data(
+                    __package__, os.path.join(dirname, exval + ext)))
+            return func(*args, **kwargs)
+
+        try:
+            names = pkg_resources.resource_listdir(__package__, dirname)
+        except FileNotFoundError:
+            names = []
+        log.debug("resources in pkg=%s, dir=%s: %s",
+                  __package__, dirname, names)
+        names = [x[:-len(ext)]
+                 for x in filter(lambda f: f.endswith(ext), names)]
+        opts = [
+            click.option("--{}".format(dest), type=click.Path()),
+            click.option("--{}-example".format(dest),
+                         type=click.Choice(names)),
+        ]
+        return multi_options(opts)(wrap)
+    return _resource_option
+
+
 @cli.command()
 @cls_option
-@click.option("--format", type=click.Choice(out_formats.keys()), default="yaml")
-@click.option("--output", type=click.File('wb'), default=sys.stdout.buffer)
+@multi_options(out_option)
 def parse(cls, format, output):
     ps = Parser()
     log.debug("start parse: %s", cls.__name__)
@@ -115,14 +166,13 @@ def template_args(data, cls=None):
 
 @cli.command('generate')
 @cls_option
-@click.option("--input", type=click.File('rb'), default=sys.stdin.buffer)
-@click.option("--format", type=click.Choice(in_formats.keys()), default="yaml")
-@click.option("--template", type=click.File('r'), required=True)
+@multi_options(in_option)
+@resource_option(dest="template", dirname="template", ext="_cli.j2")
 @click.option("--autopep8/--no-autopep8", default=False)
 def gen(cls, input, format, template, autopep8):
     data = in_formats.get(format)(input)
     env = Environment()
-    tmpl = env.from_string(template.read())
+    tmpl = env.from_string(template.read().decode("utf-8"))
     res = tmpl.render(**template_args(data, cls))
     if autopep8:
         p = subprocess.Popen(["autopep8", "-"], stdin=subprocess.PIPE)
@@ -133,9 +183,8 @@ def gen(cls, input, format, template, autopep8):
 
 @cli.command()
 @cls_option
-@click.option("--input", type=click.File('rb'), default=sys.stdin.buffer)
-@click.option("--format", type=click.Choice(in_formats.keys()), default="yaml")
-@click.option("--template", type=click.File('r'), required=True)
+@multi_options(in_option)
+@resource_option(dest="template", dirname="template", ext="_cli.j2")
 @click.argument("other", type=click.File('r'), required=True)
 def diff(cls, input, format, template, other):
     data = in_formats.get(format)(input)
@@ -151,8 +200,7 @@ def diff(cls, input, format, template, other):
 
 @cli.command('print')
 @cli_option
-@click.option("--input", type=click.File('rb'), default=sys.stdin.buffer)
-@click.option("--format", type=click.Choice(in_formats.keys()), default="yaml")
+@multi_options(in_option)
 def show(input, format):
     data = in_formats.get(format)(input)
     pprint.pprint(data)
@@ -160,8 +208,7 @@ def show(input, format):
 
 @cli.command('print-tmpl-args')
 @cls_option
-@click.option("--input", type=click.File('rb'), default=sys.stdin.buffer)
-@click.option("--format", type=click.Choice(in_formats.keys()), default="yaml")
+@multi_options(in_option)
 def show_tmplarg(cls, input, format):
     data = in_formats.get(format)(input)
     pprint.pprint(template_args(data, cls))
