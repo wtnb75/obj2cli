@@ -1,13 +1,15 @@
 import functools
-from logging import getLogger, basicConfig, INFO, DEBUG
+from logging import DEBUG, INFO, basicConfig, getLogger
+
 import click
+
 from tests.test_1 import Cls1
 
 log = getLogger(__name__)
 
 
 def set_verbose(flag):
-    fmt = '%(asctime)s %(levelname)s %(message)s'
+    fmt = "%(asctime)s %(levelname)s %(message)s"
     if flag:
         basicConfig(level=DEBUG, format=fmt)
     else:
@@ -36,6 +38,7 @@ def multi_options(decs):
         for dec in reversed(decs):
             f = dec(f)
         return f
+
     return deco
 
 
@@ -44,6 +47,7 @@ def cli_option(func):
     def wrap(verbose, *args, **kwargs):
         set_verbose(verbose)
         return func(*args, **kwargs)
+
     return multi_options(_common_option)(wrap)
 
 
@@ -53,6 +57,7 @@ def cls_option(func):
         set_verbose(verbose)
         obj = Cls1(arg1=arg1, arg2=arg2)
         return func(obj, *args, **kwargs)
+
     return multi_options(_common_option + _cls2_option)(wrap)
 
 

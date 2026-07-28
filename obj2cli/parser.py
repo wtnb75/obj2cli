@@ -32,7 +32,9 @@ class Parser:
 
     def inspect_flags(self, v):
         res = []
-        for f in filter(lambda f: f.startswith("is") and callable(getattr(inspect, f)), dir(inspect)):
+        for f in filter(
+            lambda f: f.startswith("is") and callable(getattr(inspect, f)), dir(inspect)
+        ):
             if getattr(inspect, f)(v):
                 res.append(f[2:])
         return res
@@ -40,10 +42,14 @@ class Parser:
     def parse_fn(self, fn):
         sig = inspect.signature(fn)
         log.debug("signature %s", sig)
-        res = {"flags": self.inspect_flags(fn), "args": [], "fn": fn, }
+        res = {
+            "flags": self.inspect_flags(fn),
+            "args": [],
+            "fn": fn,
+        }
         fndoc = inspect.getdoc(fn)
         if fndoc is not None:
-            res['doc'] = fndoc
+            res["doc"] = fndoc
         for name, param in sig.parameters.items():
             res["args"].append(self.onearg(name, param, res))
         if sig.return_annotation != inspect._empty:
@@ -51,9 +57,9 @@ class Parser:
         return res
 
     def fn_args(self, data):
-        if "staticmethod" in data.get("flags", []):
-            args = data.get("args", [])
-        elif "classmethod" in data.get("flags", []):
+        if "staticmethod" in data.get("flags", []) or "classmethod" in data.get(
+            "flags", []
+        ):
             args = data.get("args", [])
         else:
             args = data.get("args", [])[1:]
@@ -65,16 +71,18 @@ class Parser:
     def parse_cls(self, cls):
         if not inspect.isclass(cls):
             cls = cls.__class__
-        res = {'__init__': self.parse_new(cls),
-               '__classmeta__': {
-               "class": cls,
-               "name": cls.__name__,
-               "qualname": cls.__qualname__,
-               "flags": self.inspect_flags(cls),
-        }}
+        res = {
+            "__init__": self.parse_new(cls),
+            "__classmeta__": {
+                "class": cls,
+                "name": cls.__name__,
+                "qualname": cls.__qualname__,
+                "flags": self.inspect_flags(cls),
+            },
+        }
         clsdoc = inspect.getdoc(cls)
         if clsdoc is not None:
-            res['doc'] = clsdoc
+            res["doc"] = clsdoc
         for m, fn in inspect.getmembers(cls, lambda f: callable(f)):
             if m.startswith("_"):
                 continue
@@ -92,9 +100,9 @@ class Parser:
             if k not in res:
                 continue
             if isinstance(v, staticmethod):
-                res[k]["flags"].append('staticmethod')
+                res[k]["flags"].append("staticmethod")
             elif isinstance(v, classmethod):
-                res[k]["flags"].append('classmethod')
+                res[k]["flags"].append("classmethod")
             elif isinstance(v, property):
                 res[k]["flags"].append("property")
         return res

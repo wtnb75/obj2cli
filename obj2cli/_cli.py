@@ -1,15 +1,17 @@
-import sys
-from logging import getLogger, DEBUG, INFO, WARNING, basicConfig
-import importlib
-import datetime
 import argparse
+import datetime
+import importlib
 import json
-import yaml
-import toml
-import pickle
 import marshal
+import pickle
 import pprint
-from .main import main_single, main_func
+import sys
+from logging import DEBUG, INFO, WARNING, basicConfig, getLogger
+
+import toml
+import yaml
+
+from .main import main_func, main_single
 from .version import VERSION
 
 log = getLogger(__name__)
@@ -37,21 +39,26 @@ formats = {
 }
 
 typemap = {
-    'int': int,
-    'str': str,
-    'dict': dict,
-    'datetime': datetime.datetime,
-    'time': datetime.time,
-    'date': datetime.date,
-    'float': float,
+    "int": int,
+    "str": str,
+    "dict": dict,
+    "datetime": datetime.datetime,
+    "time": datetime.time,
+    "date": datetime.date,
+    "float": float,
 }
 
 
 def main():
     parser = argparse.ArgumentParser(prog="obj2cli")
-    parser.add_argument("--version", action="version", version='%(prog)s ' + VERSION)
-    parser.add_argument("--default-type", type=str,
-                        default='str', dest='deftype', choices=typemap.keys())
+    parser.add_argument("--version", action="version", version="%(prog)s " + VERSION)
+    parser.add_argument(
+        "--default-type",
+        type=str,
+        default="str",
+        dest="deftype",
+        choices=typemap.keys(),
+    )
     parser.add_argument("--module", type=str, required=True)
     parser.add_argument("--package", type=str, default=None)
     parser.add_argument("--interface", dest="ifklass", type=str)
@@ -62,10 +69,10 @@ def main():
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--format", choices=formats.keys(), default="bytype")
-    parser.add_argument("args", nargs='*')
+    parser.add_argument("args", nargs="*")
     parsed = parser.parse_args()
     # fmt = '%(asctime)s %(name)s %(levelname)s %(message)s'
-    fmt = '%(asctime)s %(levelname)s %(message)s'
+    fmt = "%(asctime)s %(levelname)s %(message)s"
     if parsed.verbose:
         basicConfig(level=DEBUG, format=fmt)
     elif parsed.quiet:
@@ -86,15 +93,21 @@ def main():
         ifcls = getattr(mod, ifclsname)
         cls = getattr(mod, parsed.klass)
         log.debug("class: %s, if=%s", cls, ifcls)
-        res = main_single(ifcls, cls, parsed.args,
-                          deftype=deftype, positional=parsed.positional)
+        res = main_single(
+            ifcls, cls, parsed.args, deftype=deftype, positional=parsed.positional
+        )
         log.debug("result: %s", res)
         formats.get(parsed.format, lambda f: print(f))(res)
     elif parsed.function is not None:
         fn = getattr(mod, parsed.function)
         log.debug("func: %s", fn)
-        res = main_func(fn, parsed.args, noskip=parsed.noskip,
-                        deftype=deftype, positional=parsed.positional)
+        res = main_func(
+            fn,
+            parsed.args,
+            noskip=parsed.noskip,
+            deftype=deftype,
+            positional=parsed.positional,
+        )
         log.debug("result: %s", res)
         formats.get(parsed.format, lambda f: print(f))(res)
 

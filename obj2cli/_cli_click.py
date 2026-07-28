@@ -1,32 +1,34 @@
-import os
-import sys
-import subprocess
+import difflib
 import functools
 import importlib
-from logging import getLogger, basicConfig, INFO, DEBUG
+import importlib.resources
+import io
+import os
+import pickle
+import pkgutil
 import pprint
+import subprocess
+import sys
+from logging import DEBUG, INFO, basicConfig, getLogger
+
+import click
 import yaml
 from jinja2 import Environment
-import pickle
-import click
-import difflib
-import pkg_resources
-import io
-import pkgutil
+
 from .parser import Parser
 from .version import VERSION
 
 log = getLogger(__name__)
 
 out_formats = {
-    'pickle': lambda d, f: pickle.dump(d, f),
-    'yaml': lambda d, f: yaml.dump(d, stream=f),
-    'pprint': lambda d, f: f.write(pprint.pformat(d).encode("utf-8")),
+    "pickle": lambda d, f: pickle.dump(d, f),
+    "yaml": lambda d, f: yaml.dump(d, stream=f),
+    "pprint": lambda d, f: f.write(pprint.pformat(d).encode("utf-8")),
 }
 
 in_formats = {
-    'pickle': lambda f: pickle.load(f),
-    'yaml': lambda f: yaml.load(f, Loader=yaml.FullLoader),
+    "pickle": lambda f: pickle.load(f),
+    "yaml": lambda f: yaml.load(f, Loader=yaml.FullLoader),
 }
 
 
@@ -39,7 +41,7 @@ def cli(ctx):
 
 
 def set_verbose(flag):
-    fmt = '%(asctime)s %(levelname)s %(message)s'
+    fmt = "%(asctime)s %(levelname)s %(message)s"
     if flag:
         basicConfig(level=DEBUG, format=fmt)
     else:
@@ -57,17 +59,30 @@ _cls_option = _cli_option + [
 ]
 
 out_option = [
-    click.option("--output", type=click.File('wb'),
-                 default=sys.stdout.buffer, show_default="STDOUT"),
-    click.option("--format", type=click.Choice(out_formats.keys()),
-                 default="yaml", show_default=True),
+    click.option(
+        "--output",
+        type=click.File("wb"),
+        default=sys.stdout.buffer,
+        show_default="STDOUT",
+    ),
+    click.option(
+        "--format",
+        type=click.Choice(out_formats.keys()),
+        default="yaml",
+        show_default=True,
+    ),
 ]
 
 in_option = [
-    click.option("--input", type=click.File('rb'),
-                 default=sys.stdin.buffer, show_default="STDIN"),
-    click.option("--format", type=click.Choice(in_formats.keys()),
-                 default="yaml", show_default=True),
+    click.option(
+        "--input", type=click.File("rb"), default=sys.stdin.buffer, show_default="STDIN"
+    ),
+    click.option(
+        "--format",
+        type=click.Choice(in_formats.keys()),
+        default="yaml",
+        show_default=True,
+    ),
 ]
 
 
@@ -76,6 +91,7 @@ def multi_options(decs):
         for dec in reversed(decs):
             f = dec(f)
         return f
+
     return deco
 
 
@@ -84,6 +100,7 @@ def cli_option(func):
     def wrap(verbose, *args, **kwargs):
         set_verbose(verbose)
         return func(*args, **kwargs)
+
     return multi_options(_cli_option)(wrap)
 
 
@@ -99,6 +116,7 @@ def cls_option(func):
         else:
             cls = None
         return func(cls, *args, **kwargs)
+
     return multi_options(_cls_option)(wrap)
 
 
@@ -110,28 +128,32 @@ def resource_option(dest, dirname=None, ext=""):
         @functools.wraps(func)
         def wrap(*args, **kwargs):
             val = kwargs.pop(dest)
-            exval = kwargs.pop("{}_example".format(dest))
+            exval = kwargs.pop(f"{dest}_example")
             if val is not None:
-                kwargs[dest] = open(val, 'rb')
+                # file handle is handed to `func` and must stay open past this
+                # scope; the caller is responsible for closing it.
+                kwargs[dest] = open(val, "rb")  # noqa: SIM115
             else:
-                kwargs[dest] = io.BytesIO(pkgutil.get_data(
-                    __package__, os.path.join(dirname, exval + ext)))
+                kwargs[dest] = io.BytesIO(
+                    pkgutil.get_data(__package__, os.path.join(dirname, exval + ext))
+                )
             return func(*args, **kwargs)
 
         try:
-            names = pkg_resources.resource_listdir(__package__, dirname)
+            names = [
+                p.name
+                for p in importlib.resources.files(__package__).joinpath(dirname).iterdir()
+            ]
         except FileNotFoundError:
             names = []
-        log.debug("resources in pkg=%s, dir=%s: %s",
-                  __package__, dirname, names)
-        names = [x[:-len(ext)]
-                 for x in filter(lambda f: f.endswith(ext), names)]
+        log.debug("resources in pkg=%s, dir=%s: %s", __package__, dirname, names)
+        names = [x[: -len(ext)] for x in filter(lambda f: f.endswith(ext), names)]
         opts = [
-            click.option("--{}".format(dest), type=click.Path()),
-            click.option("--{}-example".format(dest),
-                         type=click.Choice(names)),
+            click.option(f"--{dest}", type=click.Path()),
+            click.option(f"--{dest}-example", type=click.Choice(names)),
         ]
         return multi_options(opts)(wrap)
+
     return _resource_option
 
 
@@ -164,7 +186,7 @@ def template_args(data, cls=None):
     }
 
 
-@cli.command('generate')
+@cli.command("generate")
 @cls_option
 @multi_options(in_option)
 @resource_option(dest="template", dirname="template", ext="_cli.j2")
@@ -185,7 +207,7 @@ def gen(cls, input, format, template, autopep8):
 @cls_option
 @multi_options(in_option)
 @resource_option(dest="template", dirname="template", ext="_cli.j2")
-@click.argument("other", type=click.File('r'), required=True)
+@click.argument("other", type=click.File("r"), required=True)
 def diff(cls, input, format, template, other):
     data = in_formats.get(format)(input)
     env = Environment()
@@ -194,11 +216,12 @@ def diff(cls, input, format, template, other):
     before = other.read().split("\n")
     current = res.split("\n")
     differ = difflib.unified_diff(
-        before, current, fromfile="before.py", tofile="current.py", lineterm="")
+        before, current, fromfile="before.py", tofile="current.py", lineterm=""
+    )
     print("\n".join(differ))
 
 
-@cli.command('print')
+@cli.command("print")
 @cli_option
 @multi_options(in_option)
 def show(input, format):
@@ -206,7 +229,7 @@ def show(input, format):
     pprint.pprint(data)
 
 
-@cli.command('print-tmpl-args')
+@cli.command("print-tmpl-args")
 @cls_option
 @multi_options(in_option)
 def show_tmplarg(cls, input, format):

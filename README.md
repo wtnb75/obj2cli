@@ -62,7 +62,11 @@ class A:
         self.b = b
 
     def call1(self, c, d):
-        print("hello {}: {}, c={}, d={}".format(self.__class__.__name__, self.__dict__, c, d))
+        print(
+            "hello {}: {}, c={}, d={}".format(
+                self.__class__.__name__, self.__dict__, c, d
+            )
+        )
 
 
 class B(A):

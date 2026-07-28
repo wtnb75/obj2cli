@@ -1,7 +1,8 @@
 import argparse
 from logging import getLogger
-from .parser import Parser
+
 from .argparse import Argparse
+from .parser import Parser
 
 log = getLogger(__name__)
 
