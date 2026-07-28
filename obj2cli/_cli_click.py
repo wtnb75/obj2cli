@@ -142,7 +142,9 @@ def resource_option(dest, dirname=None, ext=""):
         try:
             names = [
                 p.name
-                for p in importlib.resources.files(__package__).joinpath(dirname).iterdir()
+                for p in importlib.resources.files(__package__)
+                .joinpath(dirname)
+                .iterdir()
             ]
         except FileNotFoundError:
             names = []
