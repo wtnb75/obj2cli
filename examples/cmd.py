@@ -1,4 +1,5 @@
 import sys
+
 import obj2cli
 
 
@@ -8,7 +9,7 @@ class A:
         self.b = arg2
 
     def call1(self, c, d=None):
-        print("hello {} c={}, d={}".format(self.__dict__, c, d))
+        print(f"hello {self.__dict__} c={c}, d={d}")
 
 
 if __name__ == "__main__":

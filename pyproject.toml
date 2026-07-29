@@ -1,0 +1,55 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "obj2cli"
+dynamic = ["version"]
+description = "convert object/class to CLI command"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [
+    { name = "Watanabe Takashi", email = "wtnb75@gmail.com" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "Click",
+    "argparse-utils",
+    "PyYAML",
+    "toml",
+    "Jinja2",
+]
+
+[project.urls]
+Homepage = "https://github.com/wtnb75/obj2cli"
+
+[project.scripts]
+obj2cli = "obj2cli._cli:main"
+obj2cli-click = "obj2cli._cli_click:cli"
+
+[tool.hatch.version]
+path = "obj2cli/version.py"
+pattern = "VERSION = ['\"](?P<version>[^'\"]+)['\"]"
+
+[tool.hatch.build.targets.wheel]
+packages = ["obj2cli"]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "pytest-github-actions-annotate-failures",
+    "ruff",
+    "pdoc",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["."]
+python_files = ["test_*.py"]
+addopts = "--cov-report=html:cover --cov-report=term --cov-branch --cov-reset --cov=obj2cli --doctest-modules --ignore=examples"

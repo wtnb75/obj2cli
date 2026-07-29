@@ -1,5 +1,0 @@
-Click
-argparse-utils
-PyYAML
-toml
-Jinja2

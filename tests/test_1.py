@@ -1,8 +1,9 @@
-import unittest
-import pprint
 import enum
+import pprint
+import unittest
 from abc import abstractmethod
-from obj2cli import Parser, Argparse
+
+from obj2cli import Argparse, Parser
 
 
 class Color(enum.Enum):
@@ -41,8 +42,7 @@ class Cls1:
 
     def gen1(self, n: int):
         print("gen1", n)
-        for i in range(n):
-            yield i
+        yield from range(n)
 
     @property
     def propfn(self) -> int:
@@ -56,7 +56,7 @@ class Cls1:
     def fn3(self, n: int, *, v1: str) -> int:
         return 12345
 
-    def fn4(self, n: int, v1: str, / ) -> int:
+    def fn4(self, n: int, v1: str, /) -> int:
         return 12345
 
 

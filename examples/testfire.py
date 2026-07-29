@@ -1,8 +1,9 @@
 import fire
 
+
 def hello(name: int):
-  return "Hello %s!" % name
+    return f"Hello {name}!"
 
-if __name__ == '__main__':
-  fire.Fire(hello)
 
+if __name__ == "__main__":
+    fire.Fire(hello)

@@ -1,13 +1,12 @@
-bin
-lib
-include
-pyvenv.cfg
-etc
-man
-share
-.ipynb_checkpoints
-cover
+*.pyc
 .coverage
+cover
+.pytest_cache
+*.egg-info
 dist
 build
-*.egg-info
+__pycache__
+
+# pytest-readme
+/conftest.py
+/test_readme.py
